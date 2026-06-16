@@ -58,7 +58,7 @@ sudo find /etc/nginx/sites-enabled -type f -exec grep -l "default_server" {} + 2
 echo "   [3/6] Tạo cấu hình Nginx..."
 sudo tee /etc/nginx/conf.d/youyi-proxy.conf > /dev/null << EOF
 server {
-    listen 80;
+    listen 36868;
     server_name _;
 
     location / {
