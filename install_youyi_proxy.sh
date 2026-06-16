@@ -1,9 +1,10 @@
 #!/bin/bash
 # ==============================================================================
-# Youyi Reverse Proxy Installer (Fixed Version)
-# Đã sửa lỗi: duplicate default server
+# Youyi Reverse Proxy Installer v2.1 (Tối ưu + Tùy chọn Agent)
+# - Hỗ trợ port 36868 (hoặc port tùy chỉnh)
+# - Tự động mở firewall (UFW/Firewalld)
+# - Có thể bật/tắt kiểm tra User-Agent (Agent)
 # ==============================================================================
-
 set -euo pipefail
 
 GREEN='\033[0;32m'
@@ -13,7 +14,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}   YOUYI REVERSE PROXY INSTALLER${NC}"
+echo -e "${GREEN}   YOUYI REVERSE PROXY INSTALLER v2.1${NC}"
 echo -e "${GREEN}========================================${NC}\n"
 
 # ================== HỎI THÔNG TIN ==================
@@ -26,12 +27,44 @@ done
 read -p "Nhập Port Backend (mặc định: 6666): " BACKEND_PORT
 BACKEND_PORT="${BACKEND_PORT:-6666}"
 
+read -p "Nhập Port CDN/Proxy (mặc định: 36868): " PROXY_PORT
+PROXY_PORT="${PROXY_PORT:-36868}"
+
+# ================== HỎI AGENT ==================
 echo ""
 echo -e "${CYAN}========================================${NC}"
-echo -e "Backend IP   : ${YELLOW}${BACKEND_IP}${NC}"
-echo -e "Backend Port : ${YELLOW}${BACKEND_PORT}${NC}"
-echo -e "${CYAN}========================================${NC}\n"
+echo -e "${CYAN}     CÀI ĐẶT KIỂM TRA USER-AGENT (AGENT)${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo ""
+echo -e "${YELLOW}Agent là gì?${NC}"
+echo "• Agent kiểm tra header 'User-Agent' của request gửi đến."
+echo "• Nếu BẬT: Chỉ những request có chứa chữ 'YouyiApp' trong User-Agent mới được phép truy cập backend."
+echo "• Nếu TẮT : Cho phép TẤT CẢ request đi qua (không kiểm tra User-Agent)."
+echo ""
+echo -e "${GREEN}→ Nên bật${NC} nếu bạn chỉ muốn app của bạn (YouyiApp) mới dùng được."
+echo -e "${YELLOW}→ Nên tắt${NC} nếu dùng cho CDN công khai hoặc nhiều nguồn truy cập khác nhau."
+echo ""
 
+while true; do
+    read -p "Bạn có muốn BẬT kiểm tra Agent không? [Y/n]: " enable_agent
+    case "$enable_agent" in
+        [Yy]* | "" )
+            USE_AGENT="yes"
+            echo -e "${GREEN}→ Đã chọn: BẬT Agent (chỉ cho phép YouyiApp)${NC}"
+            break
+            ;;
+        [Nn]* )
+            USE_AGENT="no"
+            echo -e "${YELLOW}→ Đã chọn: TẮT Agent (cho phép tất cả traffic)${NC}"
+            break
+            ;;
+        * )
+            echo "Vui lòng trả lời Y hoặc N."
+            ;;
+    esac
+done
+
+echo ""
 read -p "Tiếp tục cài đặt? [Y/n]: " confirm
 if [[ "$confirm" =~ ^[Nn]$ ]]; then
     echo "Đã hủy."
@@ -41,38 +74,55 @@ fi
 echo -e "\n${YELLOW}=> Đang cài đặt...${NC}"
 
 # 1. Cài Nginx
-echo "   [1/6] Cập nhật và cài Nginx..."
+echo " [1/7] Cập nhật và cài Nginx..."
 sudo apt update -y > /dev/null 2>&1
 sudo apt install -y nginx curl > /dev/null 2>&1
 
-# 2. Dọn dẹp triệt để (QUAN TRỌNG - sửa lỗi duplicate)
-echo "   [2/6] Dọn dẹp cấu hình xung đột..."
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo rm -f /etc/nginx/sites-enabled/youyi-proxy.conf 2>/dev/null || true
-sudo rm -f /etc/nginx/conf.d/youyi-proxy.conf 2>/dev/null || true
+# 2. Dọn dẹp cấu hình
+echo " [2/7] Dọn dẹp cấu hình xung đột..."
+sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+sudo rm -f /etc/nginx/sites-enabled/youyi* 2>/dev/null || true
+sudo rm -f /etc/nginx/conf.d/youyi* 2>/dev/null || true
 
-# Xóa tất cả các file có default_server trong sites-enabled (nếu có)
-sudo find /etc/nginx/sites-enabled -type f -exec grep -l "default_server" {} + 2>/dev/null | xargs sudo rm -f || true
+# 3. Mở port Firewall
+echo " [3/7] Cấu hình Firewall cho port ${PROXY_PORT}..."
+if command -v ufw >/dev/null 2>&1; then
+    if sudo ufw status | grep -q "Status: active"; then
+        sudo ufw allow ${PROXY_PORT}/tcp comment 'Youyi Reverse Proxy' > /dev/null 2>&1 || true
+        sudo ufw reload > /dev/null 2>&1 || true
+        echo "   ✓ Đã mở port ${PROXY_PORT} trong UFW"
+    else
+        echo "   ℹ UFW đang tắt"
+    fi
+elif command -v firewall-cmd >/dev/null 2>&1; then
+    if sudo firewall-cmd --state 2>/dev/null | grep -q "running"; then
+        sudo firewall-cmd --permanent --add-port=${PROXY_PORT}/tcp > /dev/null 2>&1 || true
+        sudo firewall-cmd --reload > /dev/null 2>&1 || true
+        echo "   ✓ Đã mở port ${PROXY_PORT} trong Firewalld"
+    fi
+else
+    echo "   ℹ Không phát hiện UFW/Firewalld"
+fi
 
-# 3. Tạo config mới (ghi vào conf.d - đúng chuẩn)
-echo "   [3/6] Tạo cấu hình Nginx..."
-sudo tee /etc/nginx/conf.d/youyi-proxy.conf > /dev/null << EOF
+# 4. Tạo cấu hình Nginx (có điều kiện theo Agent)
+echo " [4/7] Tạo cấu hình Nginx..."
+
+if [[ "$USE_AGENT" == "yes" ]]; then
+    # Có bật Agent
+    PROXY_CONFIG=$(cat << EOF
 server {
-    listen 36868;
+    listen ${PROXY_PORT};
     server_name _;
 
     location / {
         if (\$http_user_agent !~ "YouyiApp") {
             return 404;
         }
-
         proxy_pass http://${BACKEND_IP}:${BACKEND_PORT};
-
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_buffering off;
@@ -82,21 +132,73 @@ server {
     }
 }
 EOF
+)
+else
+    # Tắt Agent - cho phép tất cả
+    PROXY_CONFIG=$(cat << EOF
+server {
+    listen ${PROXY_PORT};
+    server_name _;
 
-# 4. Kiểm tra cấu hình
-echo "   [4/6] Kiểm tra cấu hình Nginx..."
+    location / {
+        proxy_pass http://${BACKEND_IP}:${BACKEND_PORT};
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+        proxy_redirect off;
+    }
+}
+EOF
+)
+fi
+
+echo "$PROXY_CONFIG" | sudo tee /etc/nginx/conf.d/youyi-proxy.conf > /dev/null
+
+# 5. Kiểm tra cấu hình
+echo " [5/7] Kiểm tra cấu hình Nginx..."
 if ! sudo nginx -t; then
     echo -e "${RED}❌ Lỗi cấu hình Nginx!${NC}"
     exit 1
 fi
 
-# 5. Restart Nginx
-echo "   [5/6] Khởi động lại Nginx..."
+# 6. Restart Nginx
+echo " [6/7] Khởi động lại Nginx..."
 sudo systemctl enable nginx > /dev/null 2>&1
 sudo systemctl restart nginx
 
+# 7. Hoàn tất
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}✅ CÀI ĐẶT THÀNH CÔNG!${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo -e "Backend : ${YELLOW}http://${BACKEND_IP}:${BACKEND_PORT}${NC}"
-echo -e "Config  : /etc/nginx/conf.d/youyi-proxy.conf"
+
+echo -e "Backend       : ${YELLOW}http://${BACKEND_IP}:${BACKEND_PORT}${NC}"
+echo -e "Proxy Port    : ${YELLOW}${PROXY_PORT}${NC}"
+echo -e "Config        : /etc/nginx/conf.d/youyi-proxy.conf${NC}"
+
+if [[ "$USE_AGENT" == "yes" ]]; then
+    echo -e "Agent Check   : ${GREEN}BẬT${NC} (chỉ cho phép User-Agent chứa 'YouyiApp')"
+else
+    echo -e "Agent Check   : ${YELLOW}TẮT${NC} (cho phép tất cả request)"
+fi
+
+echo -e "\n${YELLOW}=== HƯỚNG DẪN TEST ===${NC}"
+if [[ "$USE_AGENT" == "yes" ]]; then
+    echo -e "Test (phải có User-Agent):"
+    echo -e "  ${CYAN}curl -A 'YouyiApp' http://127.0.0.1:${PROXY_PORT}/${NC}"
+else
+    echo -e "Test (không cần User-Agent):"
+    echo -e "  ${CYAN}curl http://127.0.0.1:${PROXY_PORT}/${NC}"
+fi
+
+echo -e "\n${RED}⚠️  LƯU Ý QUAN TRỌNG:${NC}"
+echo "Nếu không truy cập được từ ngoài internet:"
+echo "  → Vào dashboard nhà cung cấp VPS mở port ${PROXY_PORT} (Security Group / Firewall)"
+echo "    Ví dụ: DigitalOcean, Hetzner, AWS, Linode, Vultr..."
+echo ""
+echo -e "${GREEN}Script đã tự động mở port trong UFW/Firewalld (nếu đang bật).${NC}"
