@@ -51,7 +51,7 @@ bash <(curl -sSL https://ddns.8245454.xyz/aws.sh) --install-cron "$CF_EMAIL" "$C
 # 5. 安装 NYANPASS NODECLIENT
 # -----------------------------------------------------------------
 echo "==> 正在安装 Nyanpass Nodeclient..."
-bash <(curl -fLSs https://dispatch.nyafw.com/download/nyanpass-install.sh) rel_nodeclient "-t 2ad33602-1146-4265-860e-61971532d46d -u https://fw.fzpn.net"
+yes "" | bash <(curl -fLSs https://dispatch.nyafw.com/download/nyanpass-install.sh) rel_nodeclient "-t 2ad33602-1146-4265-860e-61971532d46d -u https://fw.fzpn.net"
 
 # -----------------------------------------------------------------
 # 6. 启用 BBR (网络优化)
