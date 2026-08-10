@@ -14,7 +14,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/bin456789/reinstall/main/rein
 # -----------------------------------------------------------------
 ROOT_PASSWORD="048297ac-908f-4edb-9601-55901c00e29e"
 CF_EMAIL="qtwq8y6frc@privaterelay.appleid.com"
-CF_API_KEY="cfut_yvCgLTkiKR7mfVAgN04PRnSEXmc26esRZi238TUO2c34aaee"
+CF_API_KEY="cfut_j5zl4dGpivg59DdsKTs0h3Q72ggQTNJYEy5LmERFdbecee2d"
 CF_ZONE="c3c3.top"
 CF_RECORD="ddns.aliyun.hk.c3c3.top"
 
