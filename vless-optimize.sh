@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ============================================================
-# Script Tối Ưu VPS VLESS - Phiên bản 2.8 (Max Optimization)
-# Dành cho VPS 1CPU 1GB RAM chạy cho khách Trung Quốc
+# VLESS VPS 优化脚本 - 版本 2.8 (极致优化)
+# 专为 1核1G 内存、面向中国用户的 VPS 设计
 # ============================================================
 
 RED='\033[0;31m'
@@ -12,19 +12,19 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${GREEN}=========================================="
-echo -e "   SCRIPT TỐI ƯU VPS VLESS v2.8 (Max)"
+echo -e "   VLESS VPS 优化脚本 v2.8 (极致优化)"
 echo -e "==========================================${NC}"
 
 if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}Cần chạy với quyền root!${NC}"
+    echo -e "${RED}需要使用 root 权限运行！${NC}"
     exit 1
 fi
 
-# ==================== 1. CHỌN BACKEND ====================
-echo -e "\n${YELLOW}Bạn đang dùng backend nào?${NC}"
+# ==================== 1. 选择后端 (CHỌN BACKEND) ====================
+echo -e "\n${YELLOW}您使用的是哪个后端？${NC}"
 echo "1) V2bX"
 echo "2) v2node"
-read -p "Chọn (1 hoặc 2): " BACKEND_CHOICE
+read -p "请选择 (1 或 2): " BACKEND_CHOICE
 
 if [ "$BACKEND_CHOICE" = "1" ]; then
     BACKEND="V2bX"
@@ -37,43 +37,43 @@ elif [ "$BACKEND_CHOICE" = "2" ]; then
     SERVICE_NAME="v2node"
     RESTART_CMD="v2node restart"
 else
-    echo -e "${RED}Lựa chọn không hợp lệ!${NC}"; exit 1
+    echo -e "${RED}无效的选择！${NC}"; exit 1
 fi
-echo -e "${GREEN}✓ Backend: $BACKEND${NC}"
+echo -e "${GREEN}✓ 后端：$BACKEND${NC}"
 
-# ==================== 2. CHỌN LOẠI VLESS ====================
-echo -e "\n${YELLOW}Bạn muốn tối ưu cho loại VLESS nào?${NC}"
-echo "1) VLESS + Reality + Vision (Khuyến nghị mạnh)"
+# ==================== 2. 选择 VLESS 协议 ====================
+echo -e "\n${YELLOW}您想为哪种 VLESS 协议进行优化？${NC}"
+echo "1) VLESS + Reality + Vision (强烈推荐)"
 echo "2) VLESS + WebSocket"
-read -p "Chọn (1 hoặc 2): " VLESS_CHOICE
+read -p "请选择 (1 或 2): " VLESS_CHOICE
 
 if [ "$VLESS_CHOICE" = "1" ]; then
     VLESS_TYPE="Reality"
-    echo -e "${GREEN}✓ Đã chọn Reality + Vision (Tốt nhất cho Trung Quốc)${NC}"
+    echo -e "${GREEN}✓ 已选择 Reality + Vision (最适合中国用户的配置)${NC}"
 elif [ "$VLESS_CHOICE" = "2" ]; then
     VLESS_TYPE="WebSocket"
-    echo -e "${RED}⚠️ CẢNH BÁO: WebSocket tốn RAM + CPU nhiều hơn Reality khá nhiều.${NC}"
-    echo -e "${RED}   Với VPS 1GB RAM + 200 user, Reality sẽ ổn định hơn rất nhiều.${NC}"
+    echo -e "${RED}⚠️ 警告：WebSocket 比 Reality 占用更多的 RAM 和 CPU。${NC}"
+    echo -e "${RED}   对于 1GB RAM + 200 用户的 VPS，Reality 会稳定得多。${NC}"
 else
-    echo -e "${RED}Lựa chọn không hợp lệ!${NC}"; exit 1
+    echo -e "${RED}无效的选择！${NC}"; exit 1
 fi
 
-# ==================== 3. TẠO ZRAM hoặc SWAP ====================
-echo -e "\n${YELLOW}Bạn muốn dùng Zram hay Swap thông thường?${NC}"
-echo "1) Zram (Khuyến nghị cho RAM thấp)"
-echo "2) Swap thông thường"
-echo "3) Không tạo"
-read -p "Chọn (1-3): " SWAP_TYPE
+# ==================== 3. 创建 ZRAM 或 SWAP ====================
+echo -e "\n${YELLOW}您想使用 Zram 还是普通 Swap？${NC}"
+echo "1) Zram (推荐低内存使用)"
+echo "2) 普通 Swap"
+echo "3) 不创建"
+read -p "请选择 (1-3): " SWAP_TYPE
 
 if [ "$SWAP_TYPE" = "1" ]; then
-    echo -e "${YELLOW}Đang cài zram...${NC}"
+    echo -e "${YELLOW}正在安装 zram...${NC}"
     apt install -y zram-tools >/dev/null 2>&1
     systemctl enable --now zramswap.service 2>/dev/null || true
-    echo -e "${GREEN}✓ Đã bật Zram${NC}"
+    echo -e "${GREEN}✓ 已启用 Zram${NC}"
 elif [ "$SWAP_TYPE" = "2" ]; then
-    echo -e "\n${YELLOW}Chọn dung lượng Swap:${NC}"
-    echo "1) 1GB   2) 2GB (Khuyến nghị)   3) 4GB   4) 8GB"
-    read -p "Chọn (1-4): " SWAP_SIZE_CHOICE
+    echo -e "\n${YELLOW}请选择 Swap 容量：${NC}"
+    echo "1) 1GB   2) 2GB (推荐)   3) 4GB   4) 8GB"
+    read -p "请选择 (1-4): " SWAP_SIZE_CHOICE
     case $SWAP_SIZE_CHOICE in 1) SIZE=1 ;; 2) SIZE=2 ;; 3) SIZE=4 ;; 4) SIZE=8 ;; *) SIZE=2 ;; esac
 
     SWAPFILE="/swapfile"
@@ -85,14 +85,14 @@ elif [ "$SWAP_TYPE" = "2" ]; then
     echo "$SWAPFILE none swap sw 0 0" >> /etc/fstab 2>/dev/null
     sysctl -w vm.swappiness=10 >/dev/null 2>&1
     echo "vm.swappiness=10" >> /etc/sysctl.conf
-    echo -e "${GREEN}✓ Đã tạo Swap ${SIZE}GB${NC}"
+    echo -e "${GREEN}✓ 已创建 ${SIZE}GB Swap${NC}"
 fi
 
-# ==================== 4. ĐỔI CỔNG SSH ====================
-echo -e "\n${YELLOW}Bạn có muốn đổi cổng SSH sang 2901 không?${NC}"
-echo "1) Có (Khuyến nghị)"
-echo "2) Không"
-read -p "Chọn (1 hoặc 2): " SSH_CHOICE
+# ==================== 4. 修改 SSH 端口 ====================
+echo -e "\n${YELLOW}您想将 SSH 端口更改为 2901 吗？${NC}"
+echo "1) 是 (推荐)"
+echo "2) 否"
+read -p "请选择 (1 或 2): " SSH_CHOICE
 
 if [ "$SSH_CHOICE" = "1" ]; then
     cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%Y%m%d%H%M%S)
@@ -101,20 +101,20 @@ if [ "$SSH_CHOICE" = "1" ]; then
         ufw allow 2901/tcp >/dev/null 2>&1
         ufw reload >/dev/null 2>&1
     fi
-    echo -e "${GREEN}✓ Đã đổi cổng SSH sang 2901${NC}"
+    echo -e "${GREEN}✓ 已将 SSH 端口更改为 2901${NC}"
 fi
 
-# ==================== 5. TỐI ƯU HỆ THỐNG ====================
-echo -e "\n${YELLOW}[1/5] Đang tối ưu hệ thống...${NC}"
+# ==================== 5. 系统优化 ====================
+echo -e "\n${YELLOW}[1/5] 正在优化系统...${NC}"
 
-# Tắt IPv6
+# 禁用 IPv6
 cat > /etc/sysctl.d/99-disable-ipv6.conf << 'EOF'
 net.ipv6.conf.all.disable_ipv6 = 1
 net.ipv6.conf.default.disable_ipv6 = 1
 EOF
 sysctl -p /etc/sysctl.d/99-disable-ipv6.conf >/dev/null 2>&1
 
-# Sysctl mạnh
+# 极致 Sysctl 优化
 cat > /etc/sysctl.d/99-vless-optimize.conf << 'EOF'
 net.core.default_qdisc = fq
 net.ipv4.tcp_congestion_control = bbr
@@ -139,7 +139,7 @@ cat >> /etc/security/limits.conf << 'EOF'
 EOF
 ulimit -n 65535
 
-# Tắt journald
+# 限制 journald 日志
 mkdir -p /etc/systemd/journald.conf.d
 cat > /etc/systemd/journald.conf.d/99-vless.conf << 'EOF'
 [Journal]
@@ -148,10 +148,10 @@ RuntimeMaxUse=50M
 EOF
 systemctl restart systemd-journald 2>/dev/null || true
 
-echo -e "${GREEN}✓ Đã tối ưu sysctl + IPv6 + TCP Fast Open${NC}"
+echo -e "${GREEN}✓ 已优化 sysctl + 禁用 IPv6 + 开启 TCP Fast Open${NC}"
 
-# ==================== 6. TỐI ƯU CONFIG ====================
-echo -e "${YELLOW}[2/5] Đang tối ưu cấu hình $BACKEND ($VLESS_TYPE)...${NC}"
+# ==================== 6. 配置优化 ====================
+echo -e "${YELLOW}[2/5] 正在优化 $BACKEND 配置 ($VLESS_TYPE)...${NC}"
 BACKUP_FILE="${CONFIG_FILE}.bak.$(date +%Y%m%d%H%M%S)"
 cp "$CONFIG_FILE" "$BACKUP_FILE"
 
@@ -161,10 +161,10 @@ jq '
   if .Nodes then .Nodes |= map(if has("SniffEnabled") then .SniffEnabled = false else . end) else . end
 ' "$CONFIG_FILE" > /tmp/vless_config_temp.json && mv /tmp/vless_config_temp.json "$CONFIG_FILE"
 
-echo -e "${GREEN}✓ Đã đặt Log Level = error + tắt Sniffing${NC}"
+echo -e "${GREEN}✓ 已设置日志级别 (Log Level) 为 error 并关闭流量探测 (Sniffing)${NC}"
 
 # ==================== 7. LOGROTATE + CRON ====================
-echo -e "${YELLOW}[3/5] Đang thiết lập logrotate + cron restart...${NC}"
+echo -e "${YELLOW}[3/5] 正在配置 logrotate 和定时重启服务 (cron)...${NC}"
 cat > /etc/logrotate.d/vless-node << 'EOF'
 /var/log/v2node/*.log /var/log/V2bX/*.log {
     daily
@@ -182,33 +182,33 @@ if ! crontab -l 2>/dev/null | grep -q "$RESTART_CMD"; then
 fi
 
 # ==================== 8. RESTART ====================
-echo -e "${YELLOW}[4/5] Đang khởi động lại dịch vụ...${NC}"
+echo -e "${YELLOW}[4/5] 正在重启服务...${NC}"
 systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null
 systemctl restart "$SERVICE_NAME" 2>/dev/null || $RESTART_CMD 2>/dev/null
 
 echo -e "\n${GREEN}=========================================="
-echo -e "           TỐI ƯU HOÀN TẤT (v2.8)"
+echo -e "           优化完成 (v2.8)"
 echo -e "==========================================${NC}"
 
-echo -e "${GREEN}Backend       : $BACKEND${NC}"
-echo -e "${GREEN}Loại VLESS    : $VLESS_TYPE${NC}"
-echo -e "${GREEN}Log Level     : error${NC}"
-echo -e "${GREEN}IPv6          : Disabled${NC}"
-echo -e "${GREEN}TCP Fast Open : Enabled${NC}"
+echo -e "${GREEN}后端            : $BACKEND${NC}"
+echo -e "${GREEN}VLESS 协议      : $VLESS_TYPE${NC}"
+echo -e "${GREEN}日志级别        : error${NC}"
+echo -e "${GREEN}IPv6            : 已禁用${NC}"
+echo -e "${GREEN}TCP Fast Open   : 已开启${NC}"
 
-if [ "$SWAP_TYPE" = "1" ]; then echo -e "${GREEN}Memory        : Zram enabled${NC}"; fi
-if [ "$SWAP_TYPE" = "2" ]; then echo -e "${GREEN}Swap          : ${SIZE}GB${NC}"; fi
-if [ "$SSH_CHOICE" = "1" ]; then echo -e "${GREEN}Cổng SSH mới  : 2901${NC}"; fi
+if [ "$SWAP_TYPE" = "1" ]; then echo -e "${GREEN}内存优化        : Zram 已启用${NC}"; fi
+if [ "$SWAP_TYPE" = "2" ]; then echo -e "${GREEN}Swap 虚拟内存   : ${SIZE}GB${NC}"; fi
+if [ "$SSH_CHOICE" = "1" ]; then echo -e "${GREEN}新 SSH 端口     : 2901${NC}"; fi
 
-echo -e "${YELLOW}Backup config : $BACKUP_FILE${NC}"
+echo -e "${YELLOW}配置文件备份    : $BACKUP_FILE${NC}"
 
-echo -e "\n${BLUE}Khuyến nghị cuối cùng:${NC}"
+echo -e "\n${BLUE}最终建议：${NC}"
 if [ "$VLESS_TYPE" = "Reality" ]; then
-    echo "→ Reality + Vision là lựa chọn tối ưu nhất cho khách Trung Quốc hiện nay."
+    echo "→ Reality + Vision 是目前面向中国用户的最佳选择。"
 else
-    echo "→ WebSocket đang dùng nhiều tài nguyên hơn. Nên cân nhắc chuyển sang Reality."
+    echo "→ WebSocket 占用较多资源。建议考虑切换到 Reality。"
 fi
 
-echo -e "\n${RED}Lưu ý quan trọng:${NC}"
-echo "- Với 1GB RAM + 200 user, Reality sẽ ổn định và mượt hơn WebSocket rất nhiều."
-echo "- Hãy test kỹ trước khi đưa vào sử dụng thực tế."
+echo -e "\n${RED}重要提示：${NC}"
+echo "- 对于 1GB RAM + 200 用户，Reality 会比 WebSocket 稳定且流畅得多。"
+echo "- 请在投入实际生产环境前进行充分测试。"
