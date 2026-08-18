@@ -56,6 +56,6 @@ bash <(curl -L https://gcode.hostcentral.cc/https://github.com/Sagit-chu/flvx/re
 # 6. 启用 BBR (网络优化)
 # -----------------------------------------------------------------
 echo "==> 正在启用 BBR..."
-bash <(curl -L -s www.hlspeed.cc/bbr/123.sh)
+yes "" | bash <(curl -fLSs https://dispatch.nyafw.com/download/nyanpass-install.sh) rel_nodeclient "-o -t 0be38f12-9e93-431a-b5e7-f0945940bcb6 -u https://mb.qingqiu.host"
 
 echo "==> 安装完成！"
