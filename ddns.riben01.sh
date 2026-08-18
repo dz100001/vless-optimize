@@ -10,7 +10,15 @@ echo "==> 正在执行一键重装系统为 Debian 13..."
 bash <(curl -sSL https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh) debian -v 13 --password "$ROOT_PASSWORD"
 
 # -----------------------------------------------------------------
-# 1. 配置信息
+# 1. 安装基础工具 (CURL, WGET) & 更新系统
+# -----------------------------------------------------------------
+echo "==> 正在安装 curl、wget 并更新 VPS 软件..."
+sudo apt update && sudo apt install -y curl wget
+sudo apt dist-upgrade -y
+sudo apt install -y cron jq
+sudo systemctl enable --now cron
+
+# 2. 配置信息
 # -----------------------------------------------------------------
 ROOT_PASSWORD="048297ac-908f-4edb-9601-55901c00e29e"
 CF_EMAIL="qtwq8y6frc@privaterelay.appleid.com"
@@ -18,14 +26,6 @@ CF_API_KEY="cfut_j5zl4dGpivg59DdsKTs0h3Q72ggQTNJYEy5LmERFdbecee2d"
 CF_ZONE="c3c3.top"
 CF_RECORD="aliyun.riben01.c3c3.top"
 
-# -----------------------------------------------------------------
-# 2. 安装基础工具 (CURL, WGET) & 更新系统
-# -----------------------------------------------------------------
-echo "==> 正在安装 curl、wget 并更新 VPS 软件..."
-sudo apt update && sudo apt install -y curl wget
-sudo apt dist-upgrade -y
-sudo apt install -y cron jq
-sudo systemctl enable --now cron
 
 # -----------------------------------------------------------------
 # 3. 配置 ROOT 密码 & SSH
