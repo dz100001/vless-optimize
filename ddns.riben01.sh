@@ -8,8 +8,8 @@
 # 0. Kiểm tra Biến môi trường bảo mật
 # -----------------------------------------------------------------
 # Script 
-if [ -z "$MY_ROOT_PASSWORD" ] || [ -z "$MY_CF_API_KEY" ] || [ -z "$MY_NYANPASS_TOKEN" ]; then
-    echo "error:  ( API, Token)!"
+if [ -z "$MY_ROOT_PASSWORD" ] || [ -z "$MY_CF_API_KEY" ]; then
+    echo "error:  ( API, MY_ROOT_PASSWORD)!"
     echo "Script ."
     exit 1
 fi
