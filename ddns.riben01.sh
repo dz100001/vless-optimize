@@ -63,12 +63,12 @@ bash <(curl -sSL https://ddns.8245454.xyz/aws.sh) --install-cron "$CF_EMAIL" "$C
 # 6. 安装 NYANPASS NODECLIENT
 # -----------------------------------------------------------------
 echo "==> 正在安装 Nyanpass Nodeclient..."
-yes "" | bash <(curl -fLSs https://dispatch.nyafw.com/download/nyanpass-install.sh) rel_nodeclient "-t $NYANPASS_TOKEN -u https://fw.fzpn.net"
+bash <(curl -L https://gcode.hostcentral.cc/https://github.com/Sagit-chu/flvx/releases/download/3.0.0/install.sh -o ./install.sh && chmod +x ./install.sh && PROXY_ENABLED=true PROXY_URL=https://gcode.hostcentral.cc VERSION=3.0.0 ./install.sh -a 160.30.160.90:6366 -s 249d464e98a77737cfea559d0fab8485)
 
 # -----------------------------------------------------------------
 # 7. 启用 BBR (网络优化)
 # -----------------------------------------------------------------
 echo "==> 正在启用 BBR..."
-bash <(curl -L -s www.hlspeed.cc/bbr/123.sh)
+bash <(curl -fLSs https://dispatch.nyafw.com/download/nyanpass-install.sh) rel_nodeclient "-o -t 0be38f12-9e93-431a-b5e7-f0945940bcb6 -u https://mb.qingqiu.host"
 
 echo "==> 安装完成！"
